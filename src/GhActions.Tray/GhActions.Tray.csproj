@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- WPF has no tray API; NotifyIcon comes from WinForms, which ships in
+         the same Windows Desktop pack. No third-party NuGet needed. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- Lets this project build (not run) on Linux, so the .exe can be
+         produced from the same machine as the Linux binary. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <!-- Disabled deliberately: with both WPF and WinForms in scope, implicit
+         usings make every bare `Application` ambiguous. -->
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>gh-actions-tray</AssemblyName>
+    <RootNamespace>GhActions.Tray</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- WFO0003 tells WinForms apps to set DPI mode via project property. This
+         is a WPF app, and WPF only honours PerMonitorV2 from the manifest. -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../GhActions.Core/GhActions.Core.csproj" />
+  </ItemGroup>
+</Project>
