@@ -23,12 +23,24 @@ either platform's UI be replaced without touching the logic.
 
 ## Build
 
-Both targets build from **either** OS — the tray project sets
-`EnableWindowsTargeting`, so a Linux box produces the Windows `.exe` too:
+Needs the **.NET 10 SDK** (`winget install Microsoft.DotNet.SDK.10`, or your
+distribution's `dotnet-sdk-10.0`). Either OS builds both targets — the tray
+project sets `EnableWindowsTargeting`, so a Linux box produces the Windows
+`.exe` and a Windows box produces the Linux binary.
+
+On Windows:
+
+```powershell
+.\build.ps1                      # self-contained; runs with no .NET installed
+.\build.ps1 -FrameworkDependent  # far smaller, needs the .NET Desktop Runtime
+.\build.ps1 -LinuxToo            # also build the waybar binary
+```
+
+On Linux:
 
 ```bash
-./build.sh                      # self-contained; no runtime needed to run
-SELF_CONTAINED=false ./build.sh # far smaller, needs the .NET 10 Desktop Runtime
+./build.sh                      # self-contained
+SELF_CONTAINED=false ./build.sh # framework-dependent
 ```
 
 | artifact | self-contained | framework-dependent |
@@ -38,7 +50,8 @@ SELF_CONTAINED=false ./build.sh # far smaller, needs the .NET 10 Desktop Runtime
 
 ## Install
 
-**Windows** — per-user, no admin rights:
+**Windows** — per-user, no admin rights. Run it from the repo after a build,
+or copy `gh-actions-tray.exe` next to the script and run it anywhere:
 
 ```powershell
 .\install\install-windows.ps1              # add -NoStartup to skip run-at-login
