@@ -3,11 +3,13 @@
 A GitHub Actions status indicator: a **waybar module on Linux** and a
 **notification-area app on Windows**, sharing one core.
 
-Both front ends show the same thing — an aggregate state (green passing, amber
-running, red failing) with a count of *live jobs* rather than runs, because one
-workflow fanning out to eleven platforms is eleven things you're waiting on.
-Clicking opens a panel with per-repo, per-run, per-platform detail, and clicking
-a job opens its log in your browser.
+Both show the same aggregate state — green passing, amber running, red failing —
+with a count of *live jobs* rather than runs, because one workflow fanning out
+to eleven platforms is eleven things you're waiting on.
+
+On Windows, clicking the tray icon opens a panel with per-repo, per-run,
+per-platform detail, where clicking a job opens its log in the browser. On
+Linux the module carries the same breakdown in its tooltip.
 
 ## Layout
 
@@ -62,15 +64,53 @@ Then edit `%APPDATA%\gh-actions\config.json` and launch *GitHub Actions* from
 the Start menu. **Windows 11 hides new tray icons** — drag it out of the `^`
 overflow once to pin it.
 
-**Linux** — installs the binary and a starter config, nothing else:
+**Linux** — installs the binary to `~/.local/bin` and writes a starter config.
+It does not edit your waybar config:
 
 ```bash
 ./install/install-linux.sh
 gh-actions-core tick        # should print waybar JSON
 ```
 
-Point a waybar `custom/` module at `gh-actions-core tick` with
-`"return-type": "json"`.
+Then add the module to `~/.config/waybar/config.jsonc`:
+
+```jsonc
+"custom/actions": {
+  "exec": "gh-actions-core tick",
+  "return-type": "json",
+  "interval": 15,
+  "signal": 8,
+  "tooltip": true
+}
+```
+
+and list `"custom/actions"` in `modules-right` (or wherever you want it).
+
+`interval` is only a heartbeat — the binary decides for itself whether a fetch
+is due, and after one it signals waybar to re-read immediately, which is what
+`"signal": 8` is for. Without that the bar can lag a full interval behind.
+
+The module sets a CSS class from the aggregate state, so style it in
+`style.css`:
+
+```css
+#custom-actions.success   { color: #9ece6a; }
+#custom-actions.failure   { color: #f7768e; }
+#custom-actions.running,
+#custom-actions.queued    { color: #e0af68; }
+#custom-actions.idle,
+#custom-actions.cancelled,
+#custom-actions.skipped,
+#custom-actions.unknown   { color: #565f89; }
+```
+
+The text is the GitHub glyph `U+F09B`, with the live job count appended when
+anything is running. It comes from a Font Awesome Brands font or a Nerd Font —
+check yours resolves it:
+
+```bash
+fc-list ':charset=f09b' family
+```
 
 ## Configuration
 
