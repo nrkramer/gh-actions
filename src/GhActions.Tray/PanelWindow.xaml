@@ -21,8 +21,13 @@
           <ColumnDefinition Width="Auto" />
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <TextBlock Grid.Column="0" Text="GitHub Actions" FontWeight="SemiBold" FontSize="13"
-                   Foreground="{StaticResource Purple}" VerticalAlignment="Center" />
+        <Button Grid.Column="0" x:Name="OrgLink" Style="{StaticResource Flat}"
+                Padding="5,2" Margin="-5,0,0,0" HorizontalAlignment="Left"
+                Click="OnOrgClick">
+          <TextBlock x:Name="HeaderText" Text="GitHub Actions" FontWeight="SemiBold"
+                     FontSize="13" Foreground="{StaticResource Purple}"
+                     VerticalAlignment="Center" />
+        </Button>
         <TextBlock Grid.Column="1" x:Name="Stamp" Style="{StaticResource Subtle}" Margin="0,0,8,0" />
         <Button Grid.Column="2" x:Name="RefreshButton" Style="{StaticResource Flat}"
                 Padding="8,3" Click="OnRefresh" ToolTip="Refresh now">

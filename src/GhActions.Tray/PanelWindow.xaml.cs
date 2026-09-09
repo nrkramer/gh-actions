@@ -13,6 +13,7 @@ public partial class PanelWindow : Window
 {
     private readonly Dictionary<string, bool> _expanded = new();
     private DateTime _hiddenAt = DateTime.MinValue;
+    private string _org = "";
 
     /// <summary>Raised when the user asks for a refresh from inside the panel.</summary>
     public event Action? RefreshRequested;
@@ -29,6 +30,15 @@ public partial class PanelWindow : Window
         var repos = VmBuilder.Build(cache, _expanded);
         RepoList.ItemsSource = repos;
         EmptyLabel.Visibility = repos.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        // The header doubles as a link to the owner's GitHub page. Disabled
+        // rather than dead when there is no org yet, so it cannot look
+        // clickable and do nothing.
+        _org = cache?.Org ?? "";
+        var hasOrg = !string.IsNullOrWhiteSpace(_org);
+        OrgLink.IsEnabled = hasOrg;
+        OrgLink.Cursor = hasOrg ? System.Windows.Input.Cursors.Hand : null;
+        OrgLink.ToolTip = hasOrg ? OrgUrl : null;
 
         Stamp.Text = cache is null || cache.Updated <= 0
             ? "never updated"
@@ -67,9 +77,21 @@ public partial class PanelWindow : Window
 
     private void OnRefresh(object sender, RoutedEventArgs e) => RefreshRequested?.Invoke();
 
+    private string OrgUrl => "https://github.com/" + Uri.EscapeDataString(_org);
+
+    private void OnOrgClick(object sender, RoutedEventArgs e)
+    {
+        if (!string.IsNullOrWhiteSpace(_org)) OpenUrl(OrgUrl);
+    }
+
     private void OnJobClick(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button { Tag: string url } || string.IsNullOrEmpty(url)) return;
+        if (sender is Button { Tag: string url }) OpenUrl(url);
+    }
+
+    private void OpenUrl(string url)
+    {
+        if (string.IsNullOrEmpty(url)) return;
         try
         {
             // UseShellExecute hands the URL to the default browser. Without it
