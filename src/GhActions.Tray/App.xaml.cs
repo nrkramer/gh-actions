@@ -31,6 +31,18 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Without this a fault anywhere in the UI shows the raw .NET crash
+        // dialog and takes the tray icon with it. Log it and stay alive: a
+        // broken panel should not cost you the indicator.
+        DispatcherUnhandledException += (_, ev) =>
+        {
+            ev.Handled = ReportCrash(ev.Exception);
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, ev) =>
+        {
+            if (ev.ExceptionObject is Exception ex) ReportCrash(ex);
+        };
+
         _config = Config.LoadOrDefault();
         _panel = new PanelWindow();
         _panel.RefreshRequested += () => _ = Poll(force: true);
@@ -144,6 +156,39 @@ public partial class App : Application
             if (Aggregator.RunState(run) == "failure")
                 return $"{repo.Name}: {run.Name} #{run.Number}";
         return null;
+    }
+
+    /// <summary>
+    /// Append a fault to the log beside the cache and tell the user where it
+    /// went. Returns true when the app can keep running.
+    /// </summary>
+    private bool ReportCrash(Exception ex)
+    {
+        var log = System.IO.Path.Combine(
+            System.IO.Path.GetDirectoryName(Paths.CachePath) ?? ".", "crash.log");
+        try
+        {
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(log)!);
+            System.IO.File.AppendAllText(log,
+                $"{DateTimeOffset.Now:O}{Environment.NewLine}{ex}{Environment.NewLine}{Environment.NewLine}");
+        }
+        catch
+        {
+            // Nowhere to write. Nothing further to be done about it.
+        }
+
+        try
+        {
+            _tray?.ShowBalloonTip(10_000, "GitHub Actions hit an error",
+                $"{ex.GetType().Name}: {ex.Message}\n\nDetails in {log}",
+                Forms.ToolTipIcon.Error);
+        }
+        catch
+        {
+            // The tray may not exist yet if this fired during startup.
+        }
+
+        return true;
     }
 
     /// <summary>NotifyIcon.Text throws above 63 characters.</summary>

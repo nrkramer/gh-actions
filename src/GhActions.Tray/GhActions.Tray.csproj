@@ -16,7 +16,14 @@
     <AssemblyName>gh-actions-tray</AssemblyName>
     <RootNamespace>GhActions.Tray</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Embedded so Explorer, the Start menu and the installer's shortcuts all
+         pick it up; the tray icon itself is drawn at runtime to carry state. -->
+    <ApplicationIcon>appicon.ico</ApplicationIcon>
+    <!-- WPF is incompatible with invariant globalization: data binding resolves
+         xml:lang through XmlLanguage.GetSpecificCulture(), which throws
+         "Cannot find non-neutral culture related to 'en-us'" when only the
+         invariant culture exists. Every binding in the panel would fail. -->
+    <InvariantGlobalization>false</InvariantGlobalization>
     <!-- WFO0003 tells WinForms apps to set DPI mode via project property. This
          is a WPF app, and WPF only honours PerMonitorV2 from the manifest. -->
     <NoWarn>$(NoWarn);WFO0003</NoWarn>

@@ -5,23 +5,25 @@ using System.Text.Json;
 namespace GhActions.Core;
 
 /// <summary>Conditional GETs against the Actions API.</summary>
-public sealed class GitHubClient : IDisposable
+public sealed class GitHubClient
 {
     public const string Api = "https://api.github.com";
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(15);
 
-    private readonly HttpClient _http;
+    // One client for the process. The tray polls every 15 seconds for days, and
+    // a client per poll would leave a connection pool and sockets in TIME_WAIT
+    // each time. Because it is shared, the token goes on the request rather
+    // than on DefaultRequestHeaders -- it can change between polls.
+    private static readonly HttpClient Http = new() { Timeout = Timeout };
+
+    private readonly string _token;
     private readonly Dictionary<string, StoreEntry> _store;
     private readonly object _storeLock = new();
 
     public GitHubClient(string token, Dictionary<string, StoreEntry> store)
     {
+        _token = token;
         _store = store;
-        _http = new HttpClient { Timeout = Timeout };
-        _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        _http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-        _http.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
-        _http.DefaultRequestHeaders.UserAgent.ParseAdd("gh-actions-core");
     }
 
     /// <summary>
@@ -36,10 +38,14 @@ public sealed class GitHubClient : IDisposable
         lock (_storeLock) _store.TryGetValue(url, out entry);
 
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _token);
+        req.Headers.Accept.ParseAdd("application/vnd.github+json");
+        req.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
+        req.Headers.UserAgent.ParseAdd("gh-actions-core");
         if (!string.IsNullOrEmpty(entry?.Etag))
             req.Headers.TryAddWithoutValidation("If-None-Match", entry.Etag);
 
-        using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
+        using var resp = await Http.SendAsync(req, ct).ConfigureAwait(false);
 
         if (resp.StatusCode == HttpStatusCode.NotModified)
         {
@@ -74,6 +80,4 @@ public sealed class GitHubClient : IDisposable
 
         return data;
     }
-
-    public void Dispose() => _http.Dispose();
 }

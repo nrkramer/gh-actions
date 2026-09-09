@@ -46,7 +46,7 @@ public static class Poller
         }
 
         var store = JsonFile.Read(Paths.StorePath, new Dictionary<string, StoreEntry>());
-        using var gh = new GitHubClient(token, store);
+        var gh = new GitHubClient(token, store);
 
         using var gate = new SemaphoreSlim(Math.Min(8, Math.Max(1, cfg.Repos.Count)));
         var tasks = cfg.Repos.Select(async repo =>
