@@ -11,7 +11,7 @@ namespace GhActions.Tray;
 
 public partial class PanelWindow : Window
 {
-    private readonly Dictionary<string, bool> _expanded = new();
+    private readonly Dictionary<long, ExpandChoice> _expanded = new();
     private DateTime _hiddenAt = DateTime.MinValue;
     private string _org = "";
 
